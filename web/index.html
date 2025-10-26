@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Pigeon - Premium Chat Experience with AI Integration">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Pigeon">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Pigeon - Premium Chat App</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+
+  <!-- Firebase Configuration -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+    
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOPfMKbNZcRqHbxwW55Rx6Ee6iJydSlWY",
+      authDomain: "pigeon-161212.firebaseapp.com",
+      projectId: "pigeon-161212",
+      storageBucket: "pigeon-161212.firebasestorage.app",
+      messagingSenderId: "312022261590",
+      appId: "1:312022261590:web:3dfd2f2cc519b6c11700f7",
+      measurementId: "G-0TXLCST25B"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a56db, #60a5fa, #8b5cf6);
+      overflow: hidden;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #1a56db, #60a5fa, #8b5cf6);
+    }
+
+    .loading-logo {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      animation: pulse 2s infinite;
+    }
+
+    .loading-logo svg {
+      width: 40px;
+      height: 40px;
+      fill: white;
+    }
+
+    .loading-title {
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .loading-subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 40px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .loading-text {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      margin-top: 16px;
+      animation: fade 2s infinite;
+    }
+
+    @keyframes fade {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* Hide loading when Flutter is ready */
+    .flutter-ready .loading-container {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-container" id="loading">
+    <div class="loading-logo">
+      <svg viewBox="0 0 24 24">
+        <path d="M21,16V14L13,9V3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z"/>
+      </svg>
+    </div>
+    <div class="loading-title">PIGEON</div>
+    <div class="loading-subtitle">Premium Chat Experience</div>
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading your premium chat experience...</div>
+  </div>
+
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp().then(function() {
+              // Hide loading screen when Flutter is ready
+              document.body.classList.add('flutter-ready');
+            });
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
