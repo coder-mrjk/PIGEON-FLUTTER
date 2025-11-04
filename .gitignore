@@ -1,14 +1,32 @@
-# Flutter / Dart
-build/
+# =========================================================
+# FLUTTER / DART PROJECT .gitignore
+# Cleaned, optimized for Flutter + Firebase + multi-platform
+# =========================================================
+
+# ------------------------------
+# Core Flutter / Dart
+# ------------------------------
 .dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
 .packages
 .pub-cache/
+build/
 .generated/
 generated_plugin_registrant.dart
+flutter_*.png
+flutter_export_environment.sh
 
-# Platform-specific builds
+# ------------------------------
+# Dependency & Lock Files
+# ------------------------------
+# Keep pubspec.yaml — it defines dependencies.
+# You may commit pubspec.lock for app projects, 
+# but ignore it for libraries/packages.
+# Uncomment the next line if you don't want to commit the lock file:
+# pubspec.lock
+
+# ------------------------------
+# Platform-Specific Build Outputs
+# ------------------------------
 ios/Flutter/Flutter.framework/
 ios/Flutter/Flutter.podspec
 ios/ServiceDefinitions.json
@@ -20,27 +38,51 @@ windows/runner/Debug/
 windows/runner/Release/
 macos/Flutter/ephemeral/
 linux/flutter/ephemeral/
+web/.dart_tool/
+web/build/
 
-# IDEs / Editors
+# ------------------------------
+# IDE / Editor Settings
+# ------------------------------
 .idea/
 .vscode/
 *.iml
 *.ipr
 *.iws
-.DS_Store
 *.swp
 *.lock
+.DS_Store
 
-# Firebase
+# ------------------------------
+# Firebase & Backend
+# ------------------------------
 .firebase/
 firebase-debug.log*
 firebase-debug.*.log*
 .dataconnect
+# Uncomment the next line if each dev should use their own Firebase config:
+# .firebaserc
 
-# Logs
-logs
+# ------------------------------
+# Logs & Runtime Files
+# ------------------------------
+logs/
 *.log
+*.tmp
+*.pid
+*.seed
+*.pid.lock
 
-# Environment
+# ------------------------------
+# Environment / Secrets
+# ------------------------------
 .env
-.firebaserc   # optional — keep if shared Firebase project
+.env.*
+!.env.example
+
+# ------------------------------
+# Misc / System
+# ------------------------------
+*.bak
+*.old
+Thumbs.db
