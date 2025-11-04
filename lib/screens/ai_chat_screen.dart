@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:glassmorphism/glassmorphism.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/models/ui_chat_message.dart';
 import '../core/providers/ai_provider.dart';
 import '../core/theme/app_theme.dart';
-import '../widgets/message_bubble.dart';
+import '../core/utils/asset_utils.dart';
+import '../widgets/animated_background.dart';
 import '../widgets/custom_text_field.dart';
-import 'chat_screen.dart';
+import '../widgets/message_bubble.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -29,22 +30,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final aiState = ref.watch(aiProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.pigeonBlue.withOpacity(0.1),
-              AppTheme.pigeonAccent.withOpacity(0.1),
-              AppTheme.pigeonPurple.withOpacity(0.1),
-            ],
-          ),
-        ),
+      body: AnimatedBackground(
+        colors: const [
+          AppTheme.pigeonBlue,
+          AppTheme.pigeonAccent,
+          AppTheme.pigeonPurple,
+        ],
+        duration: const Duration(seconds: 12),
+        showParticles: true,
         child: Column(
           children: [
             // AI Chat Header
@@ -70,7 +66,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -85,16 +81,34 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           ),
 
           // AI Avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.pigeonBlue, AppTheme.pigeonAccent],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(Icons.smart_toy, color: Colors.white, size: 24),
+          FutureBuilder<bool>(
+            future: AssetUtils.exists('assets/branding/ai/popup_logo.png'),
+            builder: (context, snapshot) {
+              final hasLogo = snapshot.data ?? false;
+              if (hasLogo) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/branding/ai/popup_logo.png',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                  ),
+                );
+              }
+              return Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppTheme.pigeonBlue, AppTheme.pigeonAccent],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child:
+                    const Icon(Icons.psychology, color: Colors.white, size: 24),
+              );
+            },
           ),
 
           const SizedBox(width: 12),
@@ -105,7 +119,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getAIProviderName(aiState.selectedProvider),
+                  'JARVIS',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -125,12 +139,24 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           PopupMenuButton<AIProvider>(
             icon: Icon(
               Icons.settings,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             onSelected: (provider) {
               ref.read(aiProvider.notifier).setProvider(provider);
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: AIProvider.auto,
+                child: Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 20),
+                    const SizedBox(width: 8),
+                    const Text('Auto (Smart)'),
+                    if (aiState.selectedProvider == AIProvider.auto)
+                      const Icon(Icons.check, color: Colors.green),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: AIProvider.openai,
                 child: Row(
@@ -185,15 +211,16 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       itemCount: aiState.messages.length,
       itemBuilder: (context, index) {
         final message = aiState.messages[index];
+        final uiMsg = UIChatMessage(
+          content: message.content,
+          isUser: message.isUser,
+          timestamp: message.timestamp,
+          senderName: message.isUser
+              ? null
+              : _getAIProviderName(aiState.selectedProvider),
+        );
         return MessageBubble(
-          message: ChatMessage(
-            content: message.content,
-            isUser: message.isUser,
-            timestamp: message.timestamp,
-            senderName: message.isUser
-                ? null
-                : _getAIProviderName(aiState.selectedProvider),
-          ),
+          message: uiMsg,
         ).animate().slideX(
               begin: message.isUser ? 0.3 : -0.3,
               end: 0,
@@ -213,22 +240,44 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppTheme.pigeonBlue, AppTheme.pigeonAccent],
-                ),
-                borderRadius: BorderRadius.circular(40),
-              ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 40),
-            ).animate().scale(duration: 1.seconds, curve: Curves.elasticOut),
+            FutureBuilder<bool>(
+              future: AssetUtils.exists('assets/branding/ai/popup_logo.png'),
+              builder: (context, snapshot) {
+                final hasLogo = snapshot.data ?? false;
+                if (hasLogo) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: Image.asset(
+                      'assets/branding/ai/popup_logo.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      .animate()
+                      .scale(duration: 1.seconds, curve: Curves.elasticOut);
+                }
+                return Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.pigeonBlue, AppTheme.pigeonAccent],
+                    ),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: const Icon(Icons.psychology,
+                      color: Colors.white, size: 40),
+                )
+                    .animate()
+                    .scale(duration: 1.seconds, curve: Curves.elasticOut);
+              },
+            ),
 
             const SizedBox(height: 24),
 
             Text(
-              'Welcome to Pigeon AI',
+              'Welcome to JARVIS',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -239,7 +288,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             Text(
               'I\'m your AI assistant. Ask me anything!',
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ).animate().fadeIn(duration: 800.ms, delay: 500.ms),
@@ -277,7 +326,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         _messageController.text = text;
         _sendMessage();
       },
-      backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
       labelStyle: TextStyle(
         color: theme.colorScheme.primary,
         fontWeight: FontWeight.w500,
@@ -294,7 +343,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -309,13 +358,14 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppTheme.pigeonRed.withOpacity(0.1),
+                color: AppTheme.pigeonRed.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.pigeonRed.withOpacity(0.3)),
+                border: Border.all(
+                    color: AppTheme.pigeonRed.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.error_outline,
                     color: AppTheme.pigeonRed,
                     size: 20,
@@ -324,14 +374,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   Expanded(
                     child: Text(
                       aiState.error!,
-                      style: TextStyle(color: AppTheme.pigeonRed, fontSize: 14),
+                      style: const TextStyle(
+                          color: AppTheme.pigeonRed, fontSize: 14),
                     ),
                   ),
                   IconButton(
                     onPressed: () {
                       ref.read(aiProvider.notifier).clearError();
                     },
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.close,
                       color: AppTheme.pigeonRed,
                       size: 20,
@@ -353,7 +404,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                       },
                 icon: Icon(
                   Icons.clear_all,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
 
@@ -381,6 +432,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     // Auto scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -392,7 +444,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   }
 
   void _showClearChatDialog(BuildContext context) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear Chat'),
@@ -416,6 +468,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   String _getAIProviderName(AIProvider provider) {
     switch (provider) {
+      case AIProvider.auto:
+        return 'Auto (Smart)';
       case AIProvider.openai:
         return 'OpenAI GPT-4';
       case AIProvider.google:

@@ -1,7 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthState {
   final User? user;
@@ -31,17 +32,24 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState()) {
-    _init();
-  }
-
+class AuthNotifier extends Notifier<AuthState> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  StreamSubscription<User?>? _authSub;
+
+  @override
+  AuthState build() {
+    ref.onDispose(() {
+      _authSub?.cancel();
+    });
+    _init();
+    return const AuthState();
+  }
 
   Future<void> _init() async {
-    _auth.authStateChanges().listen((User? user) async {
+    _authSub?.cancel();
+    _authSub = _auth.authStateChanges().listen((User? user) async {
       if (user != null) {
         final isProfileComplete = await _checkProfileComplete(user.uid);
         state = state.copyWith(
@@ -103,20 +111,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        state = state.copyWith(isLoading: false);
-        return;
+      try {
+        await _auth.signInWithPopup(GoogleAuthProvider());
+      } on UnsupportedError {
+        await _auth.signInWithProvider(GoogleAuthProvider());
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await _auth.signInWithCredential(credential);
+      state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Google sign-in failed');
     }
@@ -124,7 +125,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> signOut() async {
     try {
-      await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
+      await _auth.signOut();
     } catch (e) {
       state = state.copyWith(error: 'Sign out failed');
     }
@@ -155,6 +156,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateProfile({String? displayName, String? bio}) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final data = <String, dynamic>{};
+      if (displayName != null) data['displayName'] = displayName;
+      if (bio != null) data['bio'] = bio;
+      data['lastSeen'] = FieldValue.serverTimestamp();
+
+      await _firestore.collection('users').doc(user.uid).update(data);
+
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to update profile',
+      );
+    }
+  }
+
   String _getErrorMessage(String errorCode) {
     switch (errorCode) {
       case 'user-not-found':
@@ -177,6 +200,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
-});
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);

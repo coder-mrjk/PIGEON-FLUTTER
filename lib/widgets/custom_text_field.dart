@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController? controller;
@@ -18,6 +17,7 @@ class CustomTextField extends StatelessWidget {
   final Color? fillColor;
   final Color? borderColor;
   final double borderRadius;
+  final Iterable<String>? autofillHints;
 
   const CustomTextField({
     super.key,
@@ -37,12 +37,11 @@ class CustomTextField extends StatelessWidget {
     this.fillColor,
     this.borderColor,
     this.borderRadius = 12,
+    this.autofillHints,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
@@ -54,34 +53,36 @@ class CustomTextField extends StatelessWidget {
       maxLines: maxLines,
       maxLength: maxLength,
       textCapitalization: textCapitalization,
-      style: TextStyle(color: Colors.white, fontSize: 16),
+      autofillHints: autofillHints,
+      style: const TextStyle(color: Colors.white, fontSize: 16),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.6),
+          color: Colors.white.withValues(alpha: 0.6),
           fontSize: 16,
         ),
         prefixIcon: prefixIcon != null
-            ? Icon(prefixIcon, color: Colors.white.withOpacity(0.7), size: 20)
+            ? Icon(prefixIcon,
+                color: Colors.white.withValues(alpha: 0.7), size: 20)
             : null,
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: fillColor ?? Colors.white.withOpacity(0.1),
+        fillColor: fillColor ?? Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide(
-            color: borderColor ?? Colors.white.withOpacity(0.3),
+            color: borderColor ?? Colors.white.withValues(alpha: 0.3),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide(
-            color: borderColor ?? Colors.white.withOpacity(0.3),
+            color: borderColor ?? Colors.white.withValues(alpha: 0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          borderSide: BorderSide(color: Colors.white, width: 2),
+          borderSide: const BorderSide(color: Colors.white, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -125,7 +126,8 @@ class SearchTextField extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+        border:
+            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: TextField(
         controller: controller,
@@ -134,21 +136,20 @@ class SearchTextField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             size: 20,
           ),
-          suffixIcon:
-              showClearButton &&
+          suffixIcon: showClearButton &&
                   controller != null &&
                   controller!.text.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     size: 20,
                   ),
                   onPressed: () {
@@ -194,7 +195,8 @@ class MessageTextField extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+        border:
+            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -204,7 +206,7 @@ class MessageTextField extends StatelessWidget {
               onPressed: onAttachment,
               icon: Icon(
                 Icons.attach_file,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
 
@@ -218,7 +220,7 @@ class MessageTextField extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
@@ -235,7 +237,7 @@ class MessageTextField extends StatelessWidget {
               onPressed: onEmoji,
               icon: Icon(
                 Icons.emoji_emotions_outlined,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
 
@@ -257,7 +259,8 @@ class MessageTextField extends StatelessWidget {
                     )
                   : Icon(Icons.send, color: theme.colorScheme.primary),
               style: IconButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                backgroundColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
                 shape: const CircleBorder(),
               ),
             ),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers/auth_provider.dart';
 import '../core/theme/simple_theme.dart';
-import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/custom_text_field.dart';
 
 class SimpleAuthScreen extends ConsumerStatefulWidget {
   const SimpleAuthScreen({super.key});
@@ -34,7 +34,7 @@ class _SimpleAuthScreenState extends ConsumerState<SimpleAuthScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -64,7 +64,7 @@ class _SimpleAuthScreenState extends ConsumerState<SimpleAuthScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo and Title
-                    Icon(
+                    const Icon(
                       Icons.message,
                       size: 64,
                       color: Colors.white,
@@ -87,6 +87,7 @@ class _SimpleAuthScreenState extends ConsumerState<SimpleAuthScreen> {
                       controller: _emailController,
                       hintText: 'Email',
                       keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
                           return 'Please enter your email';
@@ -105,6 +106,9 @@ class _SimpleAuthScreenState extends ConsumerState<SimpleAuthScreen> {
                       controller: _passwordController,
                       hintText: 'Password',
                       obscureText: true,
+                      autofillHints: _isLogin
+                          ? const [AutofillHints.password]
+                          : const [AutofillHints.newPassword],
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
                           return 'Please enter your password';
@@ -132,7 +136,8 @@ class _SimpleAuthScreenState extends ConsumerState<SimpleAuthScreen> {
                       text: 'Continue with Google',
                       onPressed:
                           authState.isLoading ? null : _handleGoogleSignIn,
-                      isSecondary: true,
+                      backgroundColor: Colors.white,
+                      textColor: SimpleTheme.pigeonBlue,
                       icon: Icons.login,
                     ).animate().fadeIn(delay: 1200.ms),
 

@@ -23,19 +23,20 @@ class PigeonLoader extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 color ?? theme.colorScheme.primary,
-                (color ?? theme.colorScheme.primary).withOpacity(0.3),
+                (color ?? theme.colorScheme.primary).withValues(alpha: 0.3),
               ],
             ),
           ),
           child: const Icon(Icons.flight, color: Colors.white, size: 24),
-        ).animate().rotate(duration: 2.seconds, curve: Curves.linear).repeat(),
-
+        )
+            .animate(onPlay: (controller) => controller.repeat())
+            .rotate(duration: 2.seconds, curve: Curves.linear),
         if (message != null) ...[
           const SizedBox(height: 16),
           Text(
             message!,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
           ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
@@ -64,7 +65,7 @@ class TypingIndicator extends StatelessWidget {
             Text(
               '$senderName is typing',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(width: 8),
@@ -140,7 +141,8 @@ class _TypingDotState extends State<_TypingDot>
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: widget.color.withOpacity(0.3 + (_animation.value * 0.7)),
+            color:
+                widget.color.withValues(alpha: 0.3 + (_animation.value * 0.7)),
             shape: BoxShape.circle,
           ),
         );
@@ -211,7 +213,7 @@ class _ShimmerLoaderState extends State<ShimmerLoader>
               colors: [
                 widget.baseColor ?? theme.colorScheme.surface,
                 widget.highlightColor ??
-                    theme.colorScheme.surface.withOpacity(0.5),
+                    theme.colorScheme.surface.withValues(alpha: 0.5),
                 widget.baseColor ?? theme.colorScheme.surface,
               ],
               stops: [
@@ -238,9 +240,8 @@ class MessageSkeleton extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isUser) ...[
             const ShimmerLoader(width: 32, height: 32, borderRadius: 16),
@@ -275,7 +276,7 @@ class ChatListSkeleton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ShimmerLoader(
+                    const ShimmerLoader(
                       width: double.infinity,
                       height: 16,
                       borderRadius: 8,
@@ -347,8 +348,8 @@ class _PulseLoaderState extends State<PulseLoader>
           height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: (widget.color ?? theme.colorScheme.primary).withOpacity(
-              1.0 - _animation.value,
+            color: (widget.color ?? theme.colorScheme.primary).withValues(
+              alpha: 1.0 - _animation.value,
             ),
           ),
         );

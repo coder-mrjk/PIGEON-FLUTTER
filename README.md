@@ -74,12 +74,13 @@ A premium Flutter web chat application with advanced AI integration, featuring O
    - Enable Authentication and Firestore in Firebase Console
 
 4. **Configure AI APIs**
-   - Add your API keys in `lib/core/providers/ai_provider.dart`:
+   - Add your API keys in `lib/core/config/api_config.dart`:
      ```dart
-     static const String _openaiApiKey = 'YOUR_OPENAI_API_KEY';
-     static const String _googleApiKey = 'YOUR_GOOGLE_API_KEY';
-     static const String _perplexityApiKey = 'YOUR_PERPLEXITY_API_KEY';
+     static const String openAIApiKey = 'YOUR_OPENAI_API_KEY';
+     static const String googleAPIKey = 'YOUR_GOOGLE_API_KEY';
+     static const String perplexityApiKey = 'YOUR_PERPLEXITY_API_KEY';
      ```
+   - See [API Keys Setup](#-api-keys-setup) for detailed instructions
 
 5. **Run the app**
    ```bash
@@ -89,19 +90,22 @@ A premium Flutter web chat application with advanced AI integration, featuring O
 ## 🔑 API Keys Setup
 
 ### OpenAI API
-1. Visit [OpenAI Platform](https://platform.openai.com/)
-2. Create an account and generate an API key
-3. Add to `ai_provider.dart`
+1. Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create an account and generate an API key (starts with `sk-`)
+3. Add to `lib/core/config/api_config.dart`
+4. The app will validate the key before making requests
 
 ### Google AI (Gemini)
-1. Visit [Google AI Studio](https://makersuite.google.com/)
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create a project and get API key
-3. Add to `ai_provider.dart`
+3. Add to `lib/core/config/api_config.dart`
+4. Enable Gemini API in your Google Cloud project
 
 ### Perplexity AI
-1. Visit [Perplexity API](https://www.perplexity.ai/api)
-2. Sign up and get API key
-3. Add to `ai_provider.dart`
+1. Visit [Perplexity AI Settings](https://www.perplexity.ai/settings/api)
+2. Sign up and get API key (starts with `pplx-`)
+3. Add to `lib/core/config/api_config.dart`
+4. Note: Perplexity provides real-time web search capabilities
 
 ## 🏗️ Project Structure
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers/ai_provider.dart';
-import '../core/theme/app_theme.dart';
 
 class AIProviderSelector extends ConsumerWidget {
   const AIProviderSelector({super.key});
@@ -17,7 +16,8 @@ class AIProviderSelector extends ConsumerWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+        border:
+            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,19 +104,19 @@ class AIProviderSelector extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.primary.withOpacity(0.1)
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : theme.colorScheme.outline.withOpacity(0.3),
+                : theme.colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -130,7 +130,7 @@ class AIProviderSelector extends ConsumerWidget {
               icon,
               color: isSelected
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -147,7 +147,7 @@ class AIProviderSelector extends ConsumerWidget {
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 10,
               ),
               textAlign: TextAlign.center,
@@ -160,7 +160,7 @@ class AIProviderSelector extends ConsumerWidget {
                   color: theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
+                child: const Text(
                   'Active',
                   style: TextStyle(
                     color: Colors.white,
@@ -188,9 +188,10 @@ class AIProviderInfo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.1),
+        color: theme.colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+        border:
+            Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -214,7 +215,7 @@ class AIProviderInfo extends StatelessWidget {
                 Text(
                   _getProviderDescription(provider),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: 10,
                   ),
                 ),
@@ -228,6 +229,8 @@ class AIProviderInfo extends StatelessWidget {
 
   IconData _getProviderIcon(AIProvider provider) {
     switch (provider) {
+      case AIProvider.auto:
+        return Icons.auto_awesome;
       case AIProvider.openai:
         return Icons.psychology;
       case AIProvider.google:
@@ -239,6 +242,8 @@ class AIProviderInfo extends StatelessWidget {
 
   String _getProviderName(AIProvider provider) {
     switch (provider) {
+      case AIProvider.auto:
+        return 'Auto (Smart)';
       case AIProvider.openai:
         return 'OpenAI GPT-4';
       case AIProvider.google:
@@ -250,6 +255,8 @@ class AIProviderInfo extends StatelessWidget {
 
   String _getProviderDescription(AIProvider provider) {
     switch (provider) {
+      case AIProvider.auto:
+        return 'Automatically selects the best provider for your query';
       case AIProvider.openai:
         return 'Advanced reasoning and creativity';
       case AIProvider.google:

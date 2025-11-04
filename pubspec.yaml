@@ -1,6 +1,6 @@
 name: pigeon_flutter
 description: A premium Flutter web chat application with AI integration
-version: 1.0.0+1
+version: 1.0.0+1 # PV-1 (Pigeon Version 1)
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -14,18 +14,19 @@ dependencies:
   cupertino_icons: ^1.0.6
   google_fonts: ^6.1.0
   flutter_animate: ^4.2.0+1
+  glassmorphism: ^3.0.0
+  flutter_svg: ^2.0.9
   
   # State Management
   provider: ^6.1.2
-  riverpod: ^2.4.9
-  flutter_riverpod: ^2.4.9
+  flutter_riverpod: ^3.0.3
   
   # Firebase
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  firebase_storage: ^11.5.6
-  google_sign_in: ^6.1.6
+  firebase_core: ^4.2.0
+  firebase_auth: ^6.1.1
+  cloud_firestore: ^6.0.3
+  firebase_storage: ^13.0.3
+  google_sign_in: ^7.2.0
   
   # HTTP & API
   http: ^1.1.0
@@ -33,34 +34,36 @@ dependencies:
   
   # Utilities
   shared_preferences: ^2.2.2
-  intl: ^0.18.1
+  intl: ^0.20.2
   uuid: ^4.2.1
   cached_network_image: ^3.3.0
   image_picker: ^1.0.4
   
   # Web specific
   url_launcher: ^6.2.1
+  state_notifier: ^1.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
+
 
 flutter:
   uses-material-design: true
-  
-  # assets:
-    # - assets/images/
-    # - assets/icons/
-    # - assets/animations/
-  
+  assets:
+    - assets/branding/logo/
+    - assets/branding/backgrounds/
+    - assets/branding/ai/
   fonts:
-    - family: Poppins
+    - family: Noto Sans
       fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
+        - asset: assets/fonts/NotoSans-Regular.ttf
+        - asset: assets/fonts/NotoSans-Bold.ttf
           weight: 700
+    - family: Noto Sans Symbols 2
+      fonts:
+        - asset: assets/fonts/NotoSansSymbols2-Regular.ttf
+    - family: Noto Color Emoji
+      fonts:
+        - asset: assets/fonts/NotoColorEmoji.ttf

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +34,9 @@ class ChatMessage {
       content: data['text'] as String? ?? '',
       senderId: data['uid'] as String? ?? '',
       senderName: data['senderName'] as String? ?? 'Unknown',
-      timestamp: (data['createdAt'] as Timestamp).toDate(),
+      timestamp: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       type: data['type'] as String? ?? 'text',
       isEdited: data['isEdited'] as bool? ?? false,
       editedAt: data['editedAt'] != null
@@ -127,13 +131,25 @@ class ChatState {
   }
 }
 
-class ChatNotifier extends StateNotifier<ChatState> {
-  ChatNotifier() : super(const ChatState()) {
-    _init();
-  }
-
+class ChatNotifier extends Notifier<ChatState> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _chatsSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _messagesSub;
+
+  @override
+  ChatState build() {
+    // Ensure listeners are cleaned up when provider is disposed
+    ref.onDispose(() {
+      _chatsSub?.cancel();
+      _messagesSub?.cancel();
+    });
+
+    // Schedule initialization after the first frame to avoid circular dependency
+    Future.microtask(() => _init());
+    return const ChatState();
+  }
 
   void _init() {
     _loadChats();
@@ -144,18 +160,42 @@ class ChatNotifier extends StateNotifier<ChatState> {
       state = state.copyWith(isLoading: true, error: null);
 
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
 
+      // Query without orderBy to avoid requiring a composite index
+      // We'll sort the results in memory instead
       final chatsQuery = _firestore
           .collection('chats')
-          .where('members', arrayContains: user.uid)
-          .orderBy('lastMessageTime', descending: true);
+          .where('members', arrayContains: user.uid);
 
-      chatsQuery.snapshots().listen((snapshot) {
-        final chats =
-            snapshot.docs.map((doc) => Chat.fromFirestore(doc)).toList();
-        state = state.copyWith(chats: chats, isLoading: false);
-      });
+      _chatsSub?.cancel();
+      _chatsSub = chatsQuery.snapshots().listen(
+        (snapshot) {
+          final chats =
+              snapshot.docs.map((doc) => Chat.fromFirestore(doc)).toList();
+
+          // Sort in memory by lastMessageTime
+          chats.sort((a, b) {
+            if (a.lastMessageTime == null && b.lastMessageTime == null) {
+              return 0;
+            }
+            if (a.lastMessageTime == null) return 1;
+            if (b.lastMessageTime == null) return -1;
+            return b.lastMessageTime!.compareTo(a.lastMessageTime!);
+          });
+
+          state = state.copyWith(chats: chats, isLoading: false);
+        },
+        onError: (Object error) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Failed to load chats: ${error.toString()}',
+          );
+        },
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -179,13 +219,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
           .orderBy('createdAt', descending: true)
           .limit(50);
 
-      messagesQuery.snapshots().listen((snapshot) {
+      _messagesSub?.cancel();
+      _messagesSub = messagesQuery.snapshots().listen((snapshot) {
         final messages = snapshot.docs
             .map((doc) => ChatMessage.fromFirestore(doc))
             .toList()
             .reversed
             .toList();
         state = state.copyWith(messages: messages, isLoading: false);
+      }, onError: (Object error) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to load messages: ${error.toString()}',
+        );
       });
     } catch (e) {
       state = state.copyWith(
@@ -285,14 +331,22 @@ class ChatNotifier extends StateNotifier<ChatState> {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
+      if (otherUserId == user.uid) {
+        state = state.copyWith(error: 'You cannot chat with yourself');
+        return;
+      }
 
-      final members = [user.uid, otherUserId].toSet().toList();
+      // Deterministic key for direct chats (avoids unsupported array equality query)
+      final keyParts = [user.uid, otherUserId]..sort();
+      final chatKey = '${keyParts[0]}_${keyParts[1]}';
+      final members = keyParts; // sorted members list
 
-      // Check if chat already exists
+      // Check if chat already exists via chatKey
       final existingChatQuery = await _firestore
           .collection('chats')
-          .where('members', isEqualTo: members)
+          .where('chatKey', isEqualTo: chatKey)
           .where('isGroupChat', isEqualTo: false)
+          .limit(1)
           .get();
 
       if (existingChatQuery.docs.isNotEmpty) {
@@ -300,12 +354,94 @@ class ChatNotifier extends StateNotifier<ChatState> {
         return;
       }
 
-      // Create new chat
+      // Fetch other user's name
+      final otherUserDoc =
+          await _firestore.collection('users').doc(otherUserId).get();
+      final otherUserData = otherUserDoc.data();
+      final otherUserName = (otherUserData?['displayName'] as String?) ??
+          (otherUserData?['email'] as String?) ??
+          'Unknown';
+
+      // Create new direct chat
       final chatRef = await _firestore.collection('chats').add({
+        'name': otherUserName,
         'members': members,
         'isGroupChat': false,
+        'chatKey': chatKey,
         'createdAt': Timestamp.now(),
         'lastMessageTime': Timestamp.now(),
+        'creator': user.uid,
+      });
+
+      state = state.copyWith(selectedChatId: chatRef.id);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to create chat: ${e.toString()}');
+    }
+  }
+
+  Future<void> createDirectChatByEmail(String email) async {
+    try {
+      state = state.copyWith(error: null);
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final normalized = email.trim();
+      if (normalized.isEmpty) {
+        state = state.copyWith(error: 'Please enter an email');
+        return;
+      }
+      if (normalized.toLowerCase() == (user.email ?? '').toLowerCase()) {
+        state = state.copyWith(error: 'You cannot chat with yourself');
+        return;
+      }
+
+      // Look up user by email
+      final q = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: normalized)
+          .limit(1)
+          .get();
+
+      if (q.docs.isEmpty) {
+        state = state.copyWith(error: 'No user found with this email');
+        return;
+      }
+
+      final other = q.docs.first.data();
+      final otherUid = other['uid'] as String?;
+      final otherName = (other['displayName'] as String?) ??
+          (other['email'] as String? ?? 'Unknown');
+      if (otherUid == null || otherUid.isEmpty) {
+        state = state.copyWith(error: 'User record is missing UID');
+        return;
+      }
+
+      // Deterministic direct chat key
+      final keyParts = [user.uid, otherUid]..sort();
+      final chatKey = '${keyParts[0]}_${keyParts[1]}';
+
+      // Check if chat already exists
+      final existing = await _firestore
+          .collection('chats')
+          .where('chatKey', isEqualTo: chatKey)
+          .where('isGroupChat', isEqualTo: false)
+          .limit(1)
+          .get();
+
+      if (existing.docs.isNotEmpty) {
+        state = state.copyWith(selectedChatId: existing.docs.first.id);
+        return;
+      }
+
+      // Create chat with a friendly name for the current user
+      final chatRef = await _firestore.collection('chats').add({
+        'name': otherName,
+        'members': keyParts,
+        'isGroupChat': false,
+        'chatKey': chatKey,
+        'createdAt': Timestamp.now(),
+        'lastMessageTime': Timestamp.now(),
+        'creator': user.uid,
       });
 
       state = state.copyWith(selectedChatId: chatRef.id);
@@ -319,12 +455,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final members = [user.uid, ...memberIds].toSet().toList();
+      final members = {user.uid, ...memberIds}.toList();
 
       final chatRef = await _firestore.collection('chats').add({
         'name': name,
         'members': members,
         'isGroupChat': true,
+        'chatKey': '',
         'createdAt': Timestamp.now(),
         'lastMessageTime': Timestamp.now(),
         'creator': user.uid,
@@ -341,6 +478,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 }
 
-final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  return ChatNotifier();
-});
+final chatProvider = NotifierProvider<ChatNotifier, ChatState>(
+  ChatNotifier.new,
+);

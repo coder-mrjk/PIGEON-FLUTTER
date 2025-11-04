@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:glassmorphism/glassmorphism.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers/auth_provider.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/asset_utils.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/glassmorphic_container.dart';
+import 'home_screen.dart';
+import 'profile_setup_screen.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -33,17 +36,37 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    // Navigate when authentication state changes to logged-in
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      final wasLoggedOut = prev?.user == null;
+      final isLoggedIn = next.user != null;
+      if (wasLoggedOut && isLoggedIn && !next.isLoading) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(
+              builder: (context) => next.isProfileComplete
+                  ? const HomeScreen()
+                  : const ProfileSetupScreen(),
+            ),
+          );
+        });
+      }
+    });
+
     // Show error dialog if there's an error
-    if (authState.error != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showErrorDialog(context, authState.error!);
-        ref.read(authProvider.notifier).state = authState.copyWith(error: null);
-      });
-    }
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      if (next.error != null && next.error != prev?.error) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showErrorDialog(context, next.error!);
+        });
+      }
+    });
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -98,171 +121,179 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: const Icon(Icons.flight, size: 50, color: AppTheme.pigeonBlue),
+          clipBehavior: Clip.antiAlias,
+          child: const _BrandLogo(),
         ).animate().scale(duration: 1.seconds, curve: Curves.elasticOut),
-
         const SizedBox(height: 24),
-
         Text(
           'PIGEON',
           style: Theme.of(context).textTheme.displayMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 3,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 3,
+              ),
         ).animate().fadeIn(duration: 1.seconds, delay: 300.ms),
-
         const SizedBox(height: 8),
-
         Text(
           'Premium Chat Experience',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.white.withOpacity(0.9),
-            fontWeight: FontWeight.w500,
-          ),
+                color: Colors.white.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w500,
+              ),
         ).animate().fadeIn(duration: 1.seconds, delay: 600.ms),
       ],
     );
   }
 
   Widget _buildAuthForm(BuildContext context, AuthState authState) {
-    return GlassmorphicContainer(
+    final boxHeight = (MediaQuery.sizeOf(context).height * 0.8)
+        .clamp(380.0, 600.0)
+        .toDouble();
+    return SizedBox(
       width: double.infinity,
-      height: 400,
-      borderRadius: 20,
-      blur: 20,
-      alignment: Alignment.bottomCenter,
-      border: 2,
-      linearGradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
+      height: boxHeight,
+      child: GlassmorphicContainer(
+        width: double.infinity,
+        height: double.infinity,
+        borderRadius: 20,
+        blur: 20,
+        alignment: Alignment.bottomCenter,
+        border: 2,
+        gradientColors: [
           AppTheme.glassBackground,
-          AppTheme.glassBackground.withOpacity(0.1),
+          AppTheme.glassBackground.withValues(alpha: 0.1),
         ],
-      ),
-      borderGradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppTheme.glassBorder, AppTheme.glassBorder.withOpacity(0.1)],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Form Title
-              Text(
-                _isLogin ? 'Welcome Back' : 'Create Account',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
+        borderGradientColors: [
+          AppTheme.glassBorder,
+          AppTheme.glassBorder.withValues(alpha: 0.1),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Form Title
+                  Text(
+                    _isLogin ? 'Welcome Back' : 'Create Account',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
 
-              const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-              // Email Field
-              CustomTextField(
-                controller: _emailController,
-                hintText: 'Email',
-                prefixIcon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(
-                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                  ).hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ).animate().slideX(
-                begin: -0.3,
-                end: 0,
-                duration: 600.ms,
-                delay: 400.ms,
+                  // Email Field
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: 'Email',
+                    prefixIcon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
+                    },
+                  ).animate().slideX(
+                        begin: -0.3,
+                        end: 0,
+                        duration: 600.ms,
+                        delay: 400.ms,
+                      ),
+
+                  const SizedBox(height: 16),
+
+                  // Password Field
+                  CustomTextField(
+                    controller: _passwordController,
+                    hintText: 'Password',
+                    prefixIcon: Icons.lock_outline,
+                    obscureText: _obscurePassword,
+                    autofillHints: _isLogin
+                        ? const [AutofillHints.password]
+                        : const [AutofillHints.newPassword],
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
+                      if (!_isLogin && value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ).animate().slideX(
+                        begin: 0.3,
+                        end: 0,
+                        duration: 600.ms,
+                        delay: 500.ms,
+                      ),
+
+                  const SizedBox(height: 24),
+
+                  // Submit Button
+                  CustomButton(
+                    text: _isLogin ? 'Sign In' : 'Sign Up',
+                    onPressed: authState.isLoading ? null : _handleSubmit,
+                    isLoading: authState.isLoading,
+                    width: double.infinity,
+                  ).animate().slideY(
+                        begin: 0.3,
+                        end: 0,
+                        duration: 600.ms,
+                        delay: 600.ms,
+                      ),
+
+                  const SizedBox(height: 16),
+
+                  // Toggle Login/Signup
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLogin = !_isLogin;
+                      });
+                    },
+                    child: Text(
+                      _isLogin
+                          ? "Don't have an account? Sign Up"
+                          : "Already have an account? Sign In",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ).animate().fadeIn(duration: 600.ms, delay: 700.ms),
+                ],
               ),
-
-              const SizedBox(height: 16),
-
-              // Password Field
-              CustomTextField(
-                controller: _passwordController,
-                hintText: 'Password',
-                prefixIcon: Icons.lock_outline,
-                obscureText: _obscurePassword,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (!_isLogin && value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
-              ).animate().slideX(
-                begin: 0.3,
-                end: 0,
-                duration: 600.ms,
-                delay: 500.ms,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Submit Button
-              CustomButton(
-                text: _isLogin ? 'Sign In' : 'Sign Up',
-                onPressed: authState.isLoading ? null : _handleSubmit,
-                isLoading: authState.isLoading,
-                width: double.infinity,
-              ).animate().slideY(
-                begin: 0.3,
-                end: 0,
-                duration: 600.ms,
-                delay: 600.ms,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Toggle Login/Signup
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isLogin = !_isLogin;
-                  });
-                },
-                child: Text(
-                  _isLogin
-                      ? "Don't have an account? Sign Up"
-                      : "Already have an account? Sign In",
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ).animate().fadeIn(duration: 600.ms, delay: 700.ms),
-            ],
+            ),
           ),
         ),
       ),
@@ -289,7 +320,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       'For password reset, please contact support',
       style: Theme.of(
         context,
-      ).textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.7)),
+      )
+          .textTheme
+          .bodySmall
+          ?.copyWith(color: Colors.white.withValues(alpha: 0.7)),
       textAlign: TextAlign.center,
     ).animate().fadeIn(duration: 600.ms, delay: 1.seconds);
   }
@@ -297,16 +331,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
       if (_isLogin) {
-        ref
-            .read(authProvider.notifier)
-            .signInWithEmail(
+        ref.read(authProvider.notifier).signInWithEmail(
               _emailController.text.trim(),
               _passwordController.text,
             );
       } else {
-        ref
-            .read(authProvider.notifier)
-            .signUpWithEmail(
+        ref.read(authProvider.notifier).signUpWithEmail(
               _emailController.text.trim(),
               _passwordController.text,
             );
@@ -315,7 +345,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   void _showErrorDialog(BuildContext context, String error) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Error'),
@@ -327,6 +357,33 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BrandLogo extends StatelessWidget {
+  const _BrandLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: AssetUtils.firstExisting(const [
+        'assets/branding/logo/pigeon_logo.png',
+        'assets/branding/logo/pigeon_logo.jpg',
+      ]),
+      builder: (context, snapshot) {
+        final path = snapshot.data;
+        if (path != null) {
+          return Image.asset(path, fit: BoxFit.contain);
+        }
+        return Center(
+          child: Icon(
+            Icons.flight,
+            size: 50,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      },
     );
   }
 }

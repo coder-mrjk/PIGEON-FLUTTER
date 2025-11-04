@@ -1,5 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:glassmorphism/glassmorphism.dart';
+import 'package:glassmorphism/glassmorphism.dart' as glassmorphism;
 
 class GlassmorphicContainer extends StatelessWidget {
   final Widget child;
@@ -35,38 +36,71 @@ class GlassmorphicContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = gradientColors ?? [
+      backgroundColor ?? Colors.white.withValues(alpha: 0.1),
+      (backgroundColor ?? Colors.white).withValues(alpha: 0.05),
+    ];
+    final borderColors = borderGradientColors ?? [
+      borderColor ?? Colors.white.withValues(alpha: 0.2),
+      (borderColor ?? Colors.white).withValues(alpha: 0.1),
+    ];
 
+    final canUsePlugin = width != null && height != null;
+
+    if (canUsePlugin) {
+      return Container(
+        margin: margin,
+        child: glassmorphism.GlassmorphicContainer(
+          width: width!,
+          height: height!,
+          borderRadius: borderRadius,
+          blur: blur,
+          alignment: alignment,
+          border: border,
+          linearGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+          borderGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: borderColors,
+          ),
+          child: Container(padding: padding, child: child),
+        ),
+      );
+    }
+
+    // Shrink-wrapped fallback that doesn't force infinite constraints
     return Container(
       margin: margin,
-      child: GlassmorphicContainer(
-        width: width,
-        height: height,
-        borderRadius: borderRadius,
-        blur: blur,
-        alignment: alignment,
-        border: border,
-        linearGradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors:
-              gradientColors ??
-              [
-                backgroundColor ?? Colors.white.withOpacity(0.1),
-                (backgroundColor ?? Colors.white).withOpacity(0.05),
-              ],
+      alignment: alignment,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Stack(
+          children: [
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur * 2),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: colors,
+                  ),
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  // Simple border (non-gradient) for shrink-wrapped case
+                  border: Border.all(
+                    color: borderColors.first,
+                    width: border,
+                  ),
+                ),
+              ),
+            ),
+            Container(padding: padding, alignment: alignment, child: child),
+          ],
         ),
-        borderGradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors:
-              borderGradientColors ??
-              [
-                borderColor ?? Colors.white.withOpacity(0.2),
-                (borderColor ?? Colors.white).withOpacity(0.1),
-              ],
-        ),
-        child: Container(padding: padding, child: child),
       ),
     );
   }
@@ -104,9 +138,9 @@ class GlassmorphicCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Widget card = GlassmorphicContainer(
+    Widget card = glassmorphism.GlassmorphicContainer(
       width: double.infinity,
-      height: null,
+      height: double.infinity,
       borderRadius: borderRadius,
       blur: blur,
       alignment: Alignment.center,
@@ -114,22 +148,18 @@ class GlassmorphicCard extends StatelessWidget {
       linearGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors:
-            gradientColors ??
-            [
-              backgroundColor ?? theme.colorScheme.surface.withOpacity(0.1),
-              (backgroundColor ?? theme.colorScheme.surface).withOpacity(0.05),
-            ],
+        colors: gradientColors ?? [
+          backgroundColor ?? theme.colorScheme.surface.withValues(alpha: 0.1),
+          (backgroundColor ?? theme.colorScheme.surface).withValues(alpha: 0.05),
+        ],
       ),
       borderGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors:
-            borderGradientColors ??
-            [
-              borderColor ?? theme.colorScheme.outline.withOpacity(0.2),
-              (borderColor ?? theme.colorScheme.outline).withOpacity(0.1),
-            ],
+        colors: borderGradientColors ?? [
+          borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.2),
+          (borderColor ?? theme.colorScheme.outline).withValues(alpha: 0.1),
+        ],
       ),
       child: Container(
         padding: padding ?? const EdgeInsets.all(16),
@@ -187,9 +217,9 @@ class GlassmorphicButton extends StatelessWidget {
       child: AnimatedOpacity(
         opacity: isEnabled ? 1.0 : 0.6,
         duration: const Duration(milliseconds: 200),
-        child: GlassmorphicContainer(
+        child: glassmorphism.GlassmorphicContainer(
           width: double.infinity,
-          height: null,
+          height: double.infinity,
           borderRadius: borderRadius,
           blur: blur,
           alignment: Alignment.center,
@@ -197,29 +227,21 @@ class GlassmorphicButton extends StatelessWidget {
           linearGradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors:
-                gradientColors ??
-                [
-                  backgroundColor ?? theme.colorScheme.primary.withOpacity(0.1),
-                  (backgroundColor ?? theme.colorScheme.primary).withOpacity(
-                    0.05,
-                  ),
-                ],
+            colors: gradientColors ?? [
+              backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1),
+              (backgroundColor ?? theme.colorScheme.primary).withValues(alpha: 0.05),
+            ],
           ),
           borderGradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors:
-                borderGradientColors ??
-                [
-                  borderColor ?? theme.colorScheme.primary.withOpacity(0.3),
-                  (borderColor ?? theme.colorScheme.primary).withOpacity(0.1),
-                ],
+            colors: borderGradientColors ?? [
+              borderColor ?? theme.colorScheme.primary.withValues(alpha: 0.3),
+              (borderColor ?? theme.colorScheme.primary).withValues(alpha: 0.1),
+            ],
           ),
           child: Container(
-            padding:
-                padding ??
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: isLoading
                 ? SizedBox(
                     width: 20,
@@ -289,9 +311,9 @@ class GlassmorphicInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return GlassmorphicContainer(
+    return glassmorphism.GlassmorphicContainer(
       width: double.infinity,
-      height: null,
+      height: double.infinity,
       borderRadius: borderRadius,
       blur: blur,
       alignment: Alignment.center,
@@ -299,22 +321,18 @@ class GlassmorphicInput extends StatelessWidget {
       linearGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors:
-            gradientColors ??
-            [
-              backgroundColor ?? theme.colorScheme.surface.withOpacity(0.1),
-              (backgroundColor ?? theme.colorScheme.surface).withOpacity(0.05),
-            ],
+        colors: gradientColors ?? [
+          backgroundColor ?? theme.colorScheme.surface.withValues(alpha: 0.1),
+          (backgroundColor ?? theme.colorScheme.surface).withValues(alpha: 0.05),
+        ],
       ),
       borderGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors:
-            borderGradientColors ??
-            [
-              borderColor ?? theme.colorScheme.outline.withOpacity(0.2),
-              (borderColor ?? theme.colorScheme.outline).withOpacity(0.1),
-            ],
+        colors: borderGradientColors ?? [
+          borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.2),
+          (borderColor ?? theme.colorScheme.outline).withValues(alpha: 0.1),
+        ],
       ),
       child: TextFormField(
         controller: controller,
@@ -331,12 +349,12 @@ class GlassmorphicInput extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
           prefixIcon: prefixIcon != null
               ? Icon(
                   prefixIcon,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   size: 20,
                 )
               : null,

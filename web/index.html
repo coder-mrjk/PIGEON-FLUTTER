@@ -22,6 +22,7 @@
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Pigeon">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -29,37 +30,17 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Pigeon - Premium Chat App</title>
+  <title>Pigeon</title>
   <link rel="manifest" href="manifest.json">
 
   <script>
     // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = null;
+    var serviceWorkerVersion = "{{flutter_service_worker_version}}";
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
 
-  <!-- Firebase Configuration -->
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-    
-    // Your web app's Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyAOPfMKbNZcRqHbxwW55Rx6Ee6iJydSlWY",
-      authDomain: "pigeon-161212.firebaseapp.com",
-      projectId: "pigeon-161212",
-      storageBucket: "pigeon-161212.firebasestorage.app",
-      messagingSenderId: "312022261590",
-      appId: "1:312022261590:web:3dfd2f2cc519b6c11700f7",
-      measurementId: "G-0TXLCST25B"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
+  <!-- Firebase config is handled by Flutter (firebase_core + firebase_options.dart). -->
 
   <style>
     body {
@@ -166,20 +147,45 @@
 
   <script>
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp().then(function() {
-              // Hide loading screen when Flutter is ready
-              document.body.classList.add('flutter-ready');
-            });
+      // Load Flutter app with compatibility for old and new loader APIs
+      var loading = document.querySelector('#loading');
+
+      const onEntrypointLoaded = async function(engineInitializer) {
+        let appRunner = await engineInitializer.initializeEngine();
+        await appRunner.runApp();
+        // Hide loading screen when Flutter is ready
+        document.body.classList.add('flutter-ready');
+      };
+
+      // Prefer new API if available
+      if (typeof FlutterLoader !== 'undefined' && FlutterLoader.prototype && FlutterLoader.prototype.load) {
+        const loader = new FlutterLoader();
+        loader
+          .load({
+            entrypointUrl: 'main.dart.js',
+            serviceWorker: { serviceWorkerVersion: serviceWorkerVersion },
+          })
+          .then(onEntrypointLoaded)
+          .catch(function(e) {
+            console.error('FlutterLoader.load failed, falling back to legacy loader', e);
+            if (window._flutter && _flutter.loader && _flutter.loader.loadEntrypoint) {
+              _flutter.loader.loadEntrypoint({
+                entrypointUrl: 'main.dart.js',
+                serviceWorker: { serviceWorkerVersion: serviceWorkerVersion },
+                onEntrypointLoaded: onEntrypointLoaded,
+              });
+            }
           });
-        }
-      });
+      } else if (window._flutter && _flutter.loader && _flutter.loader.loadEntrypoint) {
+        // Legacy API
+        _flutter.loader.loadEntrypoint({
+          entrypointUrl: 'main.dart.js',
+          serviceWorker: { serviceWorkerVersion: serviceWorkerVersion },
+          onEntrypointLoaded: onEntrypointLoaded,
+        });
+      } else {
+        console.error('No Flutter loader found (flutter.js may not be loaded).');
+      }
     });
   </script>
 </body>

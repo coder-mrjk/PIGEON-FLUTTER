@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:glassmorphism/glassmorphism.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/theme/app_theme.dart';
-import '../widgets/message_bubble.dart';
+import '../core/models/ui_chat_message.dart';
+import '../core/providers/auth_provider.dart';
+import '../core/providers/chat_provider.dart' as core;
 import '../widgets/custom_text_field.dart';
+import '../widgets/message_bubble.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  final core.Chat chat;
+  const ChatScreen({super.key, required this.chat});
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -18,32 +20,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // Mock messages for demonstration
-  final List<ChatMessage> _messages = [
-    ChatMessage(
-      content: 'Hello! How are you doing today?',
-      isUser: false,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-      senderName: 'John Doe',
-    ),
-    ChatMessage(
-      content: 'Hi! I\'m doing great, thanks for asking. How about you?',
-      isUser: true,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
-    ),
-    ChatMessage(
-      content: 'I\'m doing well too! Just working on some exciting projects.',
-      isUser: false,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
-      senderName: 'John Doe',
-    ),
-    ChatMessage(
-      content:
-          'That sounds interesting! What kind of projects are you working on?',
-      isUser: true,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Ensure messages stream is attached
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(core.chatProvider.notifier).loadMessages(widget.chat.id);
+    });
+  }
 
   @override
   void dispose() {
@@ -63,7 +47,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
+              theme.colorScheme.primary.withValues(alpha: 0.05),
               theme.colorScheme.surface,
             ],
           ),
@@ -95,7 +79,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -109,12 +93,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             icon: const Icon(Icons.arrow_back),
           ),
 
-          // User Avatar
+          // Chat Avatar (fallback initials)
           CircleAvatar(
             backgroundColor: theme.colorScheme.primary,
-            child: const Text(
-              'JD',
-              style: TextStyle(
+            child: Text(
+              (widget.chat.name.isNotEmpty ? widget.chat.name[0] : 'C')
+                  .toUpperCase(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -123,19 +108,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
           const SizedBox(width: 12),
 
-          // User Info
+          // Chat Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'John Doe',
+                  widget.chat.name.isNotEmpty ? widget.chat.name : 'Chat',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'Online',
+                  widget.chat.isGroupChat ? 'Group' : 'Direct',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w500,
@@ -158,19 +143,56 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildMessagesList(BuildContext context) {
+    final chatState = ref.watch(core.chatProvider);
+    final theme = Theme.of(context);
+
+    if (chatState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (chatState.messages.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.message_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No messages yet',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _messages.length,
+      itemCount: chatState.messages.length,
       itemBuilder: (context, index) {
-        final message = _messages[index];
+        final message = chatState.messages[index];
+        final uiMsg = UIChatMessage(
+          content: message.content,
+          isUser: message.senderId == ref.read(authProvider).user?.uid,
+          timestamp: message.timestamp,
+          senderName: message.senderName,
+        );
         return MessageBubble(
-          message: message,
+          message: uiMsg,
           onTap: () {
             _showMessageOptions(context, message);
           },
         ).animate().slideX(
-              begin: message.isUser ? 0.3 : -0.3,
+              begin: message.senderId == ref.read(authProvider).user?.uid
+                  ? 0.3
+                  : -0.3,
               end: 0,
               duration: 300.ms,
               delay: (index * 100).ms,
@@ -188,7 +210,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -203,7 +225,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             },
             icon: Icon(
               Icons.attach_file,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
 
@@ -228,15 +250,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
-    final message = ChatMessage(
-      content: _messageController.text.trim(),
-      isUser: true,
-      timestamp: DateTime.now(),
-    );
-
-    setState(() {
-      _messages.add(message);
-    });
+    ref.read(core.chatProvider.notifier).sendMessage(
+          widget.chat.id,
+          _messageController.text.trim(),
+        );
 
     _messageController.clear();
 
@@ -250,34 +267,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       }
     });
-
-    // Simulate response after a delay
-    Future.delayed(const Duration(seconds: 1), () {
-      final response = ChatMessage(
-        content: 'Thanks for your message! This is a demo response.',
-        isUser: false,
-        timestamp: DateTime.now(),
-        senderName: 'John Doe',
-      );
-
-      setState(() {
-        _messages.add(response);
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    });
   }
 
   void _showChatOptions(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
@@ -314,8 +307,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _showMessageOptions(BuildContext context, ChatMessage message) {
-    showModalBottomSheet(
+  void _showMessageOptions(BuildContext context, core.ChatMessage message) {
+    showModalBottomSheet<void>(
       context: context,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
@@ -330,7 +323,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 // Copy message
               },
             ),
-            if (message.isUser) ...[
+            if (message.senderId == ref.read(authProvider).user?.uid) ...[
               ListTile(
                 leading: const Icon(Icons.edit),
                 title: const Text('Edit'),
@@ -355,7 +348,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _showAttachmentOptions(BuildContext context) {
-    showModalBottomSheet(
+    final theme = Theme.of(context);
+    showModalBottomSheet<void>(
       context: context,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
@@ -363,28 +357,148 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo),
-              title: const Text('Photo'),
-              onTap: () {
-                Navigator.of(context).pop();
-                // Pick photo
-              },
+              leading: Icon(
+                Icons.photo,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    'Photo',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Coming Soon',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              onTap: null,
             ),
             ListTile(
-              leading: const Icon(Icons.videocam),
-              title: const Text('Video'),
-              onTap: () {
-                Navigator.of(context).pop();
-                // Pick video
-              },
+              leading: Icon(
+                Icons.videocam,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    'Video',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Coming Soon',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              onTap: null,
             ),
             ListTile(
-              leading: const Icon(Icons.attach_file),
-              title: const Text('File'),
-              onTap: () {
-                Navigator.of(context).pop();
-                // Pick file
-              },
+              leading: Icon(
+                Icons.attach_file,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    'File',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Coming Soon',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              onTap: null,
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.storage,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    'Storage',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Coming Soon',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              onTap: null,
             ),
           ],
         ),
@@ -394,7 +508,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _showEmojiPicker(BuildContext context) {
     // Implement emoji picker
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Emoji Picker'),
@@ -409,9 +523,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _editMessage(ChatMessage message) {
+  void _editMessage(core.ChatMessage message) {
     // Implement message editing
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Message'),
@@ -428,8 +542,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           TextButton(
             onPressed: () {
+              final controller = TextEditingController(text: message.content);
               Navigator.of(context).pop();
-              // Update message
+              // Update message via provider
+              ref.read(core.chatProvider.notifier).editMessage(
+                    widget.chat.id,
+                    message.id,
+                    controller.text.trim(),
+                  );
             },
             child: const Text('Save'),
           ),
@@ -438,8 +558,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _deleteMessage(ChatMessage message) {
-    showDialog(
+  void _deleteMessage(core.ChatMessage message) {
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Message'),
@@ -452,9 +572,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              setState(() {
-                _messages.remove(message);
-              });
+              ref
+                  .read(core.chatProvider.notifier)
+                  .deleteMessage(widget.chat.id, message.id);
             },
             child: const Text('Delete'),
           ),
@@ -462,18 +582,4 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
-}
-
-class ChatMessage {
-  final String content;
-  final bool isUser;
-  final DateTime timestamp;
-  final String? senderName;
-
-  const ChatMessage({
-    required this.content,
-    required this.isUser,
-    required this.timestamp,
-    this.senderName,
-  });
 }

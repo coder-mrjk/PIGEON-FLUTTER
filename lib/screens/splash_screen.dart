@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:glassmorphism/glassmorphism.dart';
 
 import '../core/providers/auth_provider.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/asset_utils.dart';
+import '../widgets/animated_background.dart';
 import 'auth_screen.dart';
 import 'home_screen.dart';
 import 'profile_setup_screen.dart';
@@ -18,71 +20,69 @@ class SplashScreen extends ConsumerWidget {
 
     // Navigate based on auth state
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
       if (!authState.isLoading) {
         if (authState.user == null) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const AuthScreen()),
+            MaterialPageRoute<void>(builder: (context) => const AuthScreen()),
           );
         } else if (!authState.isProfileComplete) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ProfileSetupScreen()),
+            MaterialPageRoute<void>(
+                builder: (context) => const ProfileSetupScreen()),
           );
         } else {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
           );
         }
       }
     });
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.pigeonBlue,
-              AppTheme.pigeonAccent,
-              AppTheme.pigeonPurple,
-            ],
-          ),
-        ),
+      body: AnimatedBackground(
+        colors: const [
+          AppTheme.pigeonBlue,
+          AppTheme.pigeonAccent,
+          AppTheme.pigeonPurple,
+        ],
+        duration: const Duration(seconds: 12),
+        showParticles: true,
+        brandLightAsset: 'assets/branding/backgrounds/light.png',
+        brandDarkAsset: 'assets/branding/backgrounds/dark.png',
+        brandOverlayOpacity: 0.08,
         child: Center(
           child: Container(
             width: 300,
             height: 300,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 width: 2,
               ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Pigeon Logo/Icon
+                // Brand Logo
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 96,
+                  height: 96,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.flight,
-                    size: 40,
-                    color: AppTheme.pigeonBlue,
-                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _BrandLogo(),
                 ).animate().scale(
                       duration: 1.seconds,
                       curve: Curves.elasticOut,
@@ -111,7 +111,7 @@ class SplashScreen extends ConsumerWidget {
                 Text(
                   'Premium Chat Experience',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w500,
                       ),
                 ).animate().fadeIn(duration: 1.seconds, delay: 1.seconds),
@@ -128,6 +128,31 @@ class SplashScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BrandLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: AssetUtils.firstExisting(const [
+        'assets/branding/logo/pigeon_logo.png',
+        'assets/branding/logo/pigeon_logo.jpg',
+      ]),
+      builder: (context, snapshot) {
+        final path = snapshot.data;
+        if (path != null) {
+          return Image.asset(path, fit: BoxFit.contain);
+        }
+        return Center(
+          child: Icon(
+            Icons.flight,
+            size: 40,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      },
     );
   }
 }

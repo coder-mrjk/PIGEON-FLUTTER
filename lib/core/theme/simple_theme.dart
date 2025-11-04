@@ -11,6 +11,13 @@ class SimpleTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamilyFallback: const [
+        'Noto Sans',
+        'Noto Sans Symbols 2',
+        'Noto Color Emoji',
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+      ],
       colorScheme: ColorScheme.fromSeed(
         seedColor: pigeonBlue,
         brightness: Brightness.light,
@@ -42,6 +49,13 @@ class SimpleTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamilyFallback: const [
+        'Noto Sans',
+        'Noto Sans Symbols 2',
+        'Noto Color Emoji',
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+      ],
       colorScheme: ColorScheme.fromSeed(
         seedColor: pigeonBlue,
         brightness: Brightness.dark,

@@ -35,15 +35,21 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamilyFallback: const [
+        'Noto Sans',
+        'Noto Sans Symbols',
+        'Noto Sans Symbols 2',
+        'Noto Color Emoji',
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+      ],
       colorScheme: const ColorScheme.light(
         primary: pigeonBlue,
         secondary: pigeonAccent,
         surface: lightCard,
-        background: lightBackground,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: lightText,
-        onBackground: lightText,
         error: pigeonRed,
       ),
       textTheme: GoogleFonts.poppinsTextTheme().copyWith(
@@ -163,11 +169,13 @@ class AppTheme {
           vertical: 12,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: lightCard,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: lightCard,
@@ -187,15 +195,21 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamilyFallback: const [
+        'Noto Sans',
+        'Noto Sans Symbols',
+        'Noto Sans Symbols 2',
+        'Noto Color Emoji',
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+      ],
       colorScheme: const ColorScheme.dark(
         primary: pigeonAccent,
         secondary: pigeonBlue,
         surface: darkCard,
-        background: darkBackground,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: darkText,
-        onBackground: darkText,
         error: pigeonRed,
       ),
       textTheme: GoogleFonts.poppinsTextTheme().copyWith(
@@ -315,11 +329,13 @@ class AppTheme {
           vertical: 12,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: darkCard,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: darkCard,

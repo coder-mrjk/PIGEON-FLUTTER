@@ -1,11 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import '../core/utils/asset_utils.dart';
 
 class AnimatedBackground extends StatefulWidget {
   final Widget child;
   final List<Color> colors;
   final Duration duration;
   final bool showParticles;
+  final String? brandLightAsset;
+  final String? brandDarkAsset;
+  final double brandOverlayOpacity;
 
   const AnimatedBackground({
     super.key,
@@ -17,6 +22,9 @@ class AnimatedBackground extends StatefulWidget {
     ],
     this.duration = const Duration(seconds: 10),
     this.showParticles = true,
+    this.brandLightAsset,
+    this.brandDarkAsset,
+    this.brandOverlayOpacity = 0.15,
   });
 
   @override
@@ -29,6 +37,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
   late AnimationController _particleController;
   late Animation<double> _gradientAnimation;
   late Animation<double> _particleAnimation;
+  bool _hasLightBg = false;
+  bool _hasDarkBg = false;
 
   @override
   void initState() {
@@ -51,6 +61,25 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
     _particleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _particleController, curve: Curves.linear),
     );
+
+    _checkBrandAssets();
+  }
+
+  Future<void> _checkBrandAssets() async {
+    bool light = false;
+    bool dark = false;
+    if (widget.brandLightAsset != null) {
+      light = await AssetUtils.exists(widget.brandLightAsset!);
+    }
+    if (widget.brandDarkAsset != null) {
+      dark = await AssetUtils.exists(widget.brandDarkAsset!);
+    }
+    if (mounted) {
+      setState(() {
+        _hasLightBg = light;
+        _hasDarkBg = dark;
+      });
+    }
   }
 
   @override
@@ -62,29 +91,89 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    String? brandAsset;
+    if (brightness == Brightness.dark) {
+      brandAsset = _hasDarkBg
+          ? widget.brandDarkAsset
+          : (_hasLightBg ? widget.brandLightAsset : null);
+    } else {
+      brandAsset = _hasLightBg
+          ? widget.brandLightAsset
+          : (_hasDarkBg ? widget.brandDarkAsset : null);
+    }
+
     return Stack(
       children: [
-        // Animated Gradient Background
-        AnimatedBuilder(
-          animation: _gradientAnimation,
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: widget.colors,
-                  stops: [
-                    0.0,
-                    0.5 +
-                        0.3 * math.sin(_gradientAnimation.value * 2 * math.pi),
-                    1.0,
-                  ],
+        if (brandAsset != null)
+          Positioned.fill(
+            child: Image.asset(
+              brandAsset,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return AnimatedBuilder(
+                  animation: _gradientAnimation,
+                  builder: (context, child) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: widget.colors,
+                          stops: [
+                            0.0,
+                            0.5 +
+                                0.3 *
+                                    math.sin(
+                                        _gradientAnimation.value * 2 * math.pi),
+                            1.0,
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          )
+        else
+          AnimatedBuilder(
+            animation: _gradientAnimation,
+            builder: (context, child) {
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: widget.colors,
+                    stops: [
+                      0.0,
+                      0.5 +
+                          0.3 *
+                              math.sin(_gradientAnimation.value * 2 * math.pi),
+                      1.0,
+                    ],
+                  ),
                 ),
+              );
+            },
+          ),
+
+        if (brandAsset != null)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                // Use subtler overlay in light mode to avoid washing out image
+                color: (brightness == Brightness.dark
+                        ? Colors.black
+                        : Colors.white)
+                    .withValues(
+                        alpha: brightness == Brightness.dark
+                            ? widget.brandOverlayOpacity
+                            : (widget.brandOverlayOpacity * 0.5)),
               ),
-            );
-          },
-        ),
+            ),
+          ),
 
         // Floating Particles
         if (widget.showParticles)
@@ -128,7 +217,7 @@ class ParticlePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.white.withOpacity(0.1);
+      ..color = Colors.white.withValues(alpha: 0.1);
 
     for (final particle in particles) {
       final x = (particle.x + animationValue * particle.speed) % 1.0;
@@ -136,7 +225,7 @@ class ParticlePainter extends CustomPainter {
 
       final center = Offset(x * size.width, y * size.height);
 
-      paint.color = Colors.white.withOpacity(particle.opacity);
+      paint.color = Colors.white.withValues(alpha: particle.opacity);
       canvas.drawCircle(center, particle.size, paint);
     }
   }
@@ -245,7 +334,7 @@ class WavePainter extends CustomPainter {
       final frequency = 0.02 + (i * 0.01);
       final phase = animationValue * 2 * math.pi + (i * math.pi / 2);
 
-      paint.color = color.withOpacity(0.3 - (i * 0.1));
+      paint.color = color.withValues(alpha: 0.3 - (i * 0.1));
 
       final path = Path();
       path.moveTo(0, size.height);

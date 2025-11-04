@@ -32,13 +32,14 @@ class CustomIconButton extends StatelessWidget {
     Widget button = Container(
       padding: padding ?? const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: backgroundColor ?? theme.colorScheme.primary.withOpacity(0.1),
+        color:
+            backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: showShadow
             ? [
                 BoxShadow(
                   color: (backgroundColor ?? theme.colorScheme.primary)
-                      .withOpacity(0.2),
+                      .withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -141,45 +142,49 @@ class _AnimatedIconButtonState extends State<AnimatedIconButton>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Widget button = GestureDetector(
-      onTap: widget.onPressed,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Transform.rotate(
-              angle: _rotationAnimation.value * 3.14159,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: widget.isActive
-                      ? theme.colorScheme.primary
-                      : (widget.backgroundColor ?? theme.colorScheme.surface),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.2),
-                      blurRadius: widget.isActive ? 12 : 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  widget.isActive && widget.activeIcon != null
-                      ? widget.activeIcon!
-                      : widget.icon,
-                  color: widget.isActive
-                      ? Colors.white
-                      : (widget.iconColor ?? theme.colorScheme.onSurface),
-                  size: widget.size,
-                ),
+    Widget button = AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Transform.rotate(
+            angle: _rotationAnimation.value * 3.14159,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: widget.isActive
+                    ? theme.colorScheme.primary
+                    : (widget.backgroundColor ?? theme.colorScheme.surface),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    blurRadius: widget.isActive ? 12 : 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                widget.isActive && widget.activeIcon != null
+                    ? widget.activeIcon!
+                    : widget.icon,
+                color: widget.isActive
+                    ? Colors.white
+                    : (widget.iconColor ?? theme.colorScheme.onSurface),
+                size: widget.size,
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
+
+    if (widget.onPressed != null) {
+      button = GestureDetector(
+        onTap: widget.onPressed,
+        child: button,
+      );
+    }
 
     if (widget.tooltip != null) {
       button = Tooltip(message: widget.tooltip!, child: button);
@@ -258,37 +263,41 @@ class _PulsingIconButtonState extends State<PulsingIconButton>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Widget button = GestureDetector(
-      onTap: widget.onPressed,
-      child: AnimatedBuilder(
-        animation: _pulseAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: widget.isPulsing ? _pulseAnimation.value : 1.0,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: widget.backgroundColor ?? theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: (widget.backgroundColor ?? theme.colorScheme.primary)
-                        .withOpacity(0.3),
-                    blurRadius: widget.isPulsing ? 12 : 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                widget.icon,
-                color: widget.iconColor ?? Colors.white,
-                size: widget.size,
-              ),
+    Widget button = AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: widget.isPulsing ? _pulseAnimation.value : 1.0,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: widget.backgroundColor ?? theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: (widget.backgroundColor ?? theme.colorScheme.primary)
+                      .withValues(alpha: 0.3),
+                  blurRadius: widget.isPulsing ? 12 : 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+            child: Icon(
+              widget.icon,
+              color: widget.iconColor ?? Colors.white,
+              size: widget.size,
+            ),
+          ),
+        );
+      },
     );
+
+    if (widget.onPressed != null) {
+      button = GestureDetector(
+        onTap: widget.onPressed,
+        child: button,
+      );
+    }
 
     if (widget.tooltip != null) {
       button = Tooltip(message: widget.tooltip!, child: button);

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -44,9 +43,9 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: borderRadius ?? BorderRadius.circular(12),
           ),
-          padding:
-              padding ??
+          padding: padding ??
               const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          minimumSize: Size(width ?? 0, height ?? 48),
         ),
         child: isLoading
             ? SizedBox(
@@ -59,18 +58,56 @@ class CustomButton extends StatelessWidget {
                   ),
                 ),
               )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 20),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    text,
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                ],
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxW = constraints.maxWidth;
+                  final hasIcon = icon != null;
+                  final compact = maxW < 80;
+                  final iconOnly = hasIcon && maxW < 56;
+
+                  if (iconOnly) {
+                    return Icon(icon, size: 20);
+                  }
+
+                  final textStyle = TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: compact ? 14 : 16,
+                  );
+
+                  final textWidget = Flexible(
+                    child: Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      style: textStyle,
+                    ),
+                  );
+
+                  if (hasIcon) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: compact ? 18 : 20),
+                        SizedBox(width: compact ? 4 : 8),
+                        textWidget,
+                      ],
+                    );
+                  } else {
+                    // For extremely tight spaces, wrap text in FittedBox to scale down if needed
+                    return FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        style: textStyle,
+                      ),
+                    );
+                  }
+                },
               ),
       ),
     );
@@ -107,8 +144,8 @@ class CustomIconButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (backgroundColor ?? theme.colorScheme.primary).withOpacity(
-              0.3,
+            color: (backgroundColor ?? theme.colorScheme.primary).withValues(
+              alpha: 0.3,
             ),
             blurRadius: 8,
             offset: const Offset(0, 4),
