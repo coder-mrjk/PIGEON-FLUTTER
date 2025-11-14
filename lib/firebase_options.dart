@@ -23,5 +23,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'pigeon--7.firebasestorage.app',
     measurementId: 'G-9RST1JS6Q4',
   );
-
 }

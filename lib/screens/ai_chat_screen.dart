@@ -195,6 +195,44 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               ),
             ],
           ),
+
+          const SizedBox(width: 8),
+
+          Tooltip(
+            message: 'AI settings',
+            child: IconButton(
+              onPressed: () => _showAISettings(context),
+              icon: const Icon(Icons.tune),
+            ),
+          ),
+
+          Tooltip(
+            message: 'Backup to Google Drive (Coming soon)',
+            child: IconButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Google Drive backup is coming soon')),
+                );
+              },
+              icon: const Icon(Icons.cloud_upload),
+            ),
+          ),
+
+          Tooltip(
+            message: 'Auto backup (Coming soon)',
+            child: IconButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Auto backup is coming soon')),
+                );
+              },
+              icon: Icon(
+                Icons.cloud_sync,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -477,5 +515,87 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       case AIProvider.perplexity:
         return 'Perplexity Sonar';
     }
+  }
+
+  void _showAISettings(BuildContext context) {
+    final state = ref.read(aiProvider);
+    double temp = state.temperature;
+    double tokens = state.maxTokens.toDouble();
+    bool storeAI = state.storeAIInCloud;
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('AI Settings',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              Text('Temperature: ${temp.toStringAsFixed(2)}'),
+              Slider(
+                value: temp,
+                min: 0.0,
+                max: 1.0,
+                divisions: 20,
+                label: temp.toStringAsFixed(2),
+                onChanged: (v) => setState(() => temp = v),
+              ),
+              const SizedBox(height: 8),
+              Text('Max tokens: ${tokens.round()}'),
+              Slider(
+                value: tokens,
+                min: 64,
+                max: 4096,
+                divisions: 64,
+                label: tokens.round().toString(),
+                onChanged: (v) => setState(() => tokens = v),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                title: const Text('Store AI chats in cloud'),
+                subtitle:
+                    const Text('Save AI messages to your account (optional)'),
+                value: storeAI,
+                onChanged: (v) => setState(() => storeAI = v),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      ref.read(aiProvider.notifier).setTemperature(temp);
+                      ref
+                          .read(aiProvider.notifier)
+                          .setMaxTokens(tokens.round());
+                      await ref
+                          .read(aiProvider.notifier)
+                          .setStoreAIInCloud(storeAI);
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('AI settings updated')),
+                      );
+                    },
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

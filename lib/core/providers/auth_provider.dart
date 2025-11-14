@@ -138,9 +138,29 @@ class AuthNotifier extends Notifier<AuthState> {
       final user = _auth.currentUser;
       if (user == null) return;
 
+      // Validate inputs
+      final trimmedName = displayName.trim();
+      final trimmedBio = bio.trim();
+      
+      if (trimmedName.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Display name cannot be empty',
+        );
+        return;
+      }
+      
+      if (trimmedName.length < 2) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Display name must be at least 2 characters',
+        );
+        return;
+      }
+
       await _firestore.collection('users').doc(user.uid).set({
-        'displayName': displayName,
-        'bio': bio,
+        'displayName': trimmedName,
+        'bio': trimmedBio,
         'email': user.email,
         'uid': user.uid,
         'createdAt': FieldValue.serverTimestamp(),
@@ -187,15 +207,25 @@ class AuthNotifier extends Notifier<AuthState> {
       case 'email-already-in-use':
         return 'Email is already registered';
       case 'weak-password':
-        return 'Password is too weak';
+        return 'Password is too weak (minimum 6 characters)';
       case 'invalid-email':
         return 'Invalid email address';
       case 'user-disabled':
         return 'This account has been disabled';
       case 'too-many-requests':
         return 'Too many failed attempts. Please try again later';
+      case 'invalid-credential':
+        return 'Invalid email or password';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection';
+      case 'operation-not-allowed':
+        return 'This sign-in method is not enabled';
+      case 'requires-recent-login':
+        return 'Please sign in again to continue';
+      case 'account-exists-with-different-credential':
+        return 'Account exists with different sign-in method';
       default:
-        return 'Authentication failed';
+        return 'Authentication failed: $errorCode';
     }
   }
 }

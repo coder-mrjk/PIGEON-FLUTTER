@@ -36,14 +36,16 @@ class GlassmorphicContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = gradientColors ?? [
-      backgroundColor ?? Colors.white.withValues(alpha: 0.1),
-      (backgroundColor ?? Colors.white).withValues(alpha: 0.05),
-    ];
-    final borderColors = borderGradientColors ?? [
-      borderColor ?? Colors.white.withValues(alpha: 0.2),
-      (borderColor ?? Colors.white).withValues(alpha: 0.1),
-    ];
+    final colors = gradientColors ??
+        [
+          backgroundColor ?? Colors.white.withValues(alpha: 0.1),
+          (backgroundColor ?? Colors.white).withValues(alpha: 0.05),
+        ];
+    final borderColors = borderGradientColors ??
+        [
+          borderColor ?? Colors.white.withValues(alpha: 0.2),
+          (borderColor ?? Colors.white).withValues(alpha: 0.1),
+        ];
 
     final canUsePlugin = width != null && height != null;
 
@@ -148,18 +150,22 @@ class GlassmorphicCard extends StatelessWidget {
       linearGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: gradientColors ?? [
-          backgroundColor ?? theme.colorScheme.surface.withValues(alpha: 0.1),
-          (backgroundColor ?? theme.colorScheme.surface).withValues(alpha: 0.05),
-        ],
+        colors: gradientColors ??
+            [
+              backgroundColor ??
+                  theme.colorScheme.surface.withValues(alpha: 0.1),
+              (backgroundColor ?? theme.colorScheme.surface)
+                  .withValues(alpha: 0.05),
+            ],
       ),
       borderGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: borderGradientColors ?? [
-          borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.2),
-          (borderColor ?? theme.colorScheme.outline).withValues(alpha: 0.1),
-        ],
+        colors: borderGradientColors ??
+            [
+              borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.2),
+              (borderColor ?? theme.colorScheme.outline).withValues(alpha: 0.1),
+            ],
       ),
       child: Container(
         padding: padding ?? const EdgeInsets.all(16),
@@ -227,21 +233,28 @@ class GlassmorphicButton extends StatelessWidget {
           linearGradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: gradientColors ?? [
-              backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1),
-              (backgroundColor ?? theme.colorScheme.primary).withValues(alpha: 0.05),
-            ],
+            colors: gradientColors ??
+                [
+                  backgroundColor ??
+                      theme.colorScheme.primary.withValues(alpha: 0.1),
+                  (backgroundColor ?? theme.colorScheme.primary)
+                      .withValues(alpha: 0.05),
+                ],
           ),
           borderGradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: borderGradientColors ?? [
-              borderColor ?? theme.colorScheme.primary.withValues(alpha: 0.3),
-              (borderColor ?? theme.colorScheme.primary).withValues(alpha: 0.1),
-            ],
+            colors: borderGradientColors ??
+                [
+                  borderColor ??
+                      theme.colorScheme.primary.withValues(alpha: 0.3),
+                  (borderColor ?? theme.colorScheme.primary)
+                      .withValues(alpha: 0.1),
+                ],
           ),
           child: Container(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: padding ??
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: isLoading
                 ? SizedBox(
                     width: 20,
@@ -321,18 +334,22 @@ class GlassmorphicInput extends StatelessWidget {
       linearGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: gradientColors ?? [
-          backgroundColor ?? theme.colorScheme.surface.withValues(alpha: 0.1),
-          (backgroundColor ?? theme.colorScheme.surface).withValues(alpha: 0.05),
-        ],
+        colors: gradientColors ??
+            [
+              backgroundColor ??
+                  theme.colorScheme.surface.withValues(alpha: 0.1),
+              (backgroundColor ?? theme.colorScheme.surface)
+                  .withValues(alpha: 0.05),
+            ],
       ),
       borderGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: borderGradientColors ?? [
-          borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.2),
-          (borderColor ?? theme.colorScheme.outline).withValues(alpha: 0.1),
-        ],
+        colors: borderGradientColors ??
+            [
+              borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.2),
+              (borderColor ?? theme.colorScheme.outline).withValues(alpha: 0.1),
+            ],
       ),
       child: TextFormField(
         controller: controller,

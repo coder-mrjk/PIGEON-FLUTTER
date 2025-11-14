@@ -13,6 +13,7 @@ import '../core/utils/validators.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/custom_icon_button.dart' as custom_icons;
 import 'ai_chat_screen.dart';
+import 'ai_toolkit_chat_screen.dart';
 import 'auth_screen.dart';
 import 'chat_screen.dart';
 import 'profile_screen.dart';
@@ -843,6 +844,14 @@ class AIAssistantScreen extends ConsumerWidget {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (context) => const AIChatScreen(),
+                    ),
+                  );
+                }),
+                _buildQuickActionCard(
+                    context, 'AI Toolkit (Gemini)', Icons.auto_awesome, () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const AIToolkitChatScreen(),
                     ),
                   );
                 }),

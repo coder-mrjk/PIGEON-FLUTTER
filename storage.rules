@@ -1,29 +1,98 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isAuthed() { return request.auth != null; }
-    function isImageOrVideo() {
-      return request.resource.contentType.matches('image/.*') ||
-             request.resource.contentType.matches('video/.*') ||
-             request.resource.contentType.matches('application/pdf');
-    }
-
-    // Chat media files (users can upload to their own folder only)
-    match /chat_media/{userId}/{allPaths=**} {
-      allow read: if isAuthed();
-      allow write: if isAuthed() &&
-                     request.auth.uid == userId &&
-                     request.resource.size < 10 * 1024 * 1024 && // 10MB limit
-                     isImageOrVideo();
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    function isAuthed() { 
+      return request.auth != null; 
     }
     
-    // Profile pictures
-    match /profile_pictures/{userId} {
+    function isOwner(userId) {
+      return isAuthed() && request.auth.uid == userId;
+    }
+    
+    function isImageOrVideo() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('video/.*');
+    }
+    
+    function isDocument() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd\\..*');
+    }
+    
+    function isChatMedia() {
+      return isImageOrVideo() || isDocument();
+    }
+    
+    function isProfileImage() {
+      return isImageOrVideo() && 
+             request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+    
+    function isChatMediaSize() {
+      return request.resource.size < 10 * 1024 * 1024; // 10MB
+    }
+
+    // ============================================
+    // CHAT MEDIA FILES
+    // ============================================
+    
+    match /chat_media/{userId}/{allPaths=**} {
+      // Read: Any authenticated user can read (for shared chats)
       allow read: if isAuthed();
-      allow write: if isAuthed() &&
-                     request.auth.uid == userId &&
-                     request.resource.size < 5 * 1024 * 1024 && // 5MB limit
-                     request.resource.contentType.matches('image/.*');
+      
+      // Write: Only owner can upload to their folder
+      allow write: if isOwner(userId) &&
+                     isChatMedia() &&
+                     isChatMediaSize();
+      
+      // Delete: Only owner can delete their files
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // PROFILE PICTURES
+    // ============================================
+    
+    match /profile_pictures/{userId}/{allPaths=**} {
+      // Read: Any authenticated user can read
+      allow read: if isAuthed();
+      
+      // Write: Only owner can upload profile pictures
+      allow write: if isOwner(userId) &&
+                     isProfileImage();
+      
+      // Delete: Only owner can delete their profile picture
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // AI GENERATED IMAGES
+    // ============================================
+    
+    match /ai_images/{userId}/{allPaths=**} {
+      // Read: Only owner can read their generated images
+      allow read: if isOwner(userId);
+      
+      // Write: Only owner can save AI-generated images
+      allow write: if isOwner(userId) &&
+                     isImageOrVideo() &&
+                     request.resource.size < 20 * 1024 * 1024; // 20MB
+      
+      // Delete: Only owner can delete their images
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // DENY ALL OTHER PATHS
+    // ============================================
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

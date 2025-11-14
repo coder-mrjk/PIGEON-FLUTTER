@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../services/google_drive_service.dart';
 
 class ChatMessage {
   final String id;
@@ -119,13 +123,14 @@ class ChatState {
     List<ChatMessage>? messages,
     bool? isLoading,
     String? error,
+    bool clearError = false,
     String? selectedChatId,
   }) {
     return ChatState(
       chats: chats ?? this.chats,
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       selectedChatId: selectedChatId ?? this.selectedChatId,
     );
   }
@@ -171,7 +176,8 @@ class ChatNotifier extends Notifier<ChatState> {
           .collection('chats')
           .where('members', arrayContains: user.uid);
 
-      _chatsSub?.cancel();
+      // Cancel and wait for previous subscription to fully close
+      await _chatsSub?.cancel();
       _chatsSub = chatsQuery.snapshots().listen(
         (snapshot) {
           final chats =
@@ -474,7 +480,64 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   void clearError() {
-    state = state.copyWith(error: null);
+    state = state.copyWith(clearError: true);
+  }
+
+  // Export currently selected chat messages as JSON
+  String exportSelectedChatToJson() {
+    final chatId = state.selectedChatId;
+    if (chatId == null || chatId.isEmpty) {
+      throw Exception('No chat selected for export');
+    }
+    
+    final messages = state.messages;
+    final meta = state.chats.firstWhere(
+      (c) => c.id == chatId,
+      orElse: () => Chat(
+        id: chatId,
+        name: 'Chat',
+        members: const [],
+        isGroupChat: false,
+      ),
+    );
+    final map = {
+      'chat': {
+        'id': meta.id,
+        'name': meta.name,
+        'isGroupChat': meta.isGroupChat,
+        'members': meta.members,
+      },
+      'messages': messages
+          .map((m) => {
+                'id': m.id,
+                'text': m.content,
+                'senderId': m.senderId,
+                'senderName': m.senderName,
+                'createdAt': m.timestamp.toIso8601String(),
+                'type': m.type,
+                'isEdited': m.isEdited,
+                'editedAt': m.editedAt?.toIso8601String(),
+                'reactions': m.reactions,
+              })
+          .toList(),
+    };
+    return const JsonEncoder.withIndent('  ').convert(map);
+  }
+
+  Future<bool> backupSelectedChatToDrive() async {
+    try {
+      final json = exportSelectedChatToJson();
+      final folderId = await GoogleDriveService.instance.ensureAppFolder();
+      final ok = await GoogleDriveService.instance.uploadTextFile(
+        fileName:
+            'chat_${state.selectedChatId ?? 'unknown'}_${DateTime.now().toIso8601String().replaceAll(':', '-')}.json',
+        content: json,
+        folderId: folderId,
+      );
+      return ok;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

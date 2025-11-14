@@ -132,6 +132,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
           // More Options
           IconButton(
+            tooltip: 'Backup to Google Drive (Coming soon)',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Google Drive chat backup is coming soon')),
+              );
+            },
+            icon: const Icon(Icons.cloud_upload),
+          ),
+          IconButton(
             onPressed: () {
               _showChatOptions(context);
             },

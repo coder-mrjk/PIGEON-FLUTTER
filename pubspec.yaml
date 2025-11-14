@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_dotenv: ^5.1.0
   
   # UI & Design
   cupertino_icons: ^1.0.6
@@ -27,6 +28,11 @@ dependencies:
   cloud_firestore: ^6.0.3
   firebase_storage: ^13.0.3
   google_sign_in: ^7.2.0
+  
+  # AI (Gemini SDK)
+  google_generative_ai: ^0.4.6
+  # Flutter AI Toolkit (Gemini widgets)
+  flutter_ai_toolkit: ^0.10.0
   
   # HTTP & API
   http: ^1.1.0
@@ -52,6 +58,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - .env
     - assets/branding/logo/
     - assets/branding/backgrounds/
     - assets/branding/ai/

@@ -47,6 +47,8 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 Before running:
 - Configure Firebase in `lib/firebase_options.dart` (FlutterFire-generated file).
 - Add API keys/endpoints in `lib/core/config/api_config.dart` (OpenAI, Google Gemini, Perplexity).
+- Optional: For AI Toolkit, ensure `flutter_ai_toolkit`, `google_generative_ai`, and `firebase_vertexai` deps are installed (already in pubspec). Gemini requires `GOOGLE_API_KEY`; Vertex uses your Firebase project.
+- Optional: For Google Drive backups on web, set up OAuth consent and allowed domain for `google_sign_in` with scope `https://www.googleapis.com/auth/drive.file`.
 
 ## High-level architecture
 

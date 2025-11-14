@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/providers/theme_provider.dart';
@@ -17,6 +18,10 @@ void main() async {
   if (!kIsWeb) {
     ui.channelBuffers.allowOverflow('flutter/lifecycle', true);
   }
+  // Load .env (optional). If missing, proceed silently.
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {}
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
